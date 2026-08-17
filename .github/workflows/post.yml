@@ -4,6 +4,7 @@ on:
   schedule:
     # O'zbekiston vaqti bilan (UTC+5):
     # 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00, 16:00
+    # UTC hisobida esa 04:00 dan 11:00 gacha bo'ladi
     - cron: '0 4-11 * * *'
   workflow_dispatch: 
 
