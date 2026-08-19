@@ -58,13 +58,14 @@ def post_yuborish():
 Sening vazifang mo'minalar, ayollar va umumiy musulmonlar kanali uchun bitta chiroyli post tayyorlash.
 Bugungi maxsus mavzu: {tanlangan_mavzu}
 
-Qoidalar:
-1. Har safar mutlaqo YANGI va TAKRORLANMAS ma'lumot (boshqa hikoya, boshqa hadis, boshqa oyat) topib yoz. Oldingi yozganlaringni takrorlama.
-2. Post matni juda samimiy, o'quvchining imonini ziyoda qiladigan, ibratli va tushunarli tilda bo'lsin.
-3. Kerakli joylarda go'zal emojilardan (🌸, ✨, 📖, 🕌, 🤍) me'yorida foydalan.
-4. Post oxirida albatta qandaydir chiroyli duo yoki xulosa bilan yakunla.
-5. Post uzunligi Telegramga mos (taxminan 800-1500 belgi) bo'lsin.
-6. Faqat toza matn yozgin, hech qanday qo'shimcha tushuntirish so'zlari (masalan, "Mana sizga post" kabi) kerak emas."""
+QAT'IY QOIDALAR:
+1. HECH QACHON salomlashma ("Assalomu alaykum", "Hurmatli obunachilar" kabi so'zlarsiz TO'G'RIDAN-TO'G'RI mavzuni boshla).
+2. Matn robotga o'xshamasin! Diktor (notiq) o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan. Qisqa va ta'sirli jumlalar tuz.
+3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari yoki Sahih hadislar). 
+4. Mavzuga doir qilinmasligi kerak bo'lgan narsalar (gunohlar, xatolar) haqida ham ogohlantirib, to'g'ri yo'l ko'rsat.
+5. Har safar mutlaqo YANGI ma'lumot topib yoz.
+6. Post oxirida chiroyli duo yoki xulosa bilan yakunla.
+7. Faqat toza matn yozgin, qo'shimcha izohlar kerak emas."""
     
     try:
         # API ga so'rov yuborish
@@ -75,30 +76,64 @@ Qoidalar:
             print("❌ Model bo'sh javob qaytardi.")
             sys.exit(1)
             
-        print("✅ Post yaratildi! Telegramga yuborilmoqda...")
+        print("✅ Post yaratildi! Audio tayyorlanmoqda (Madina ovozi)...")
         
-        # Telegramga faqat matn yuborish (ayol kishi kanali uchun kitobiy va sokinroq)
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {
+        # Matnni tozalash (audio o'qiyotganda xalaqit bermasligi uchun)
+        import re
+        import asyncio
+        import edge_tts
+        
+        # Emojilar va yulduzchalarni olib tashlash
+        clean_text = re.sub(r'[*_]', '', text) # qalin va qiya yozuv belgilari
+        audio_file = "post_audio.mp3"
+        
+        async def generate_audio():
+            # Madina ovozi (Ayol kishi)
+            communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
+            await communicate.save(audio_file)
+            
+        asyncio.run(generate_audio())
+        print("✅ Audio tayyor! Telegramga yuborilmoqda...")
+        
+        # Telegramga avval matn yuborish
+        url_text = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload_text = {
             "chat_id": CHANNEL_ID,
             "text": text,
-            "parse_mode": "HTML" # Yoki Markdown
+            "parse_mode": "HTML"
         }
         
-        # Internet xatolarining oldini olish uchun 3 marta urinib ko'ramiz
+        success = False
         for urinish in range(3):
-            r = requests.post(url, json=payload).json()
+            r = requests.post(url_text, json=payload_text).json()
             if r.get("ok"):
-                print("✅ Islomiy post kanalga muvaffaqiyatli yuborildi!")
+                success = True
                 break
             else:
-                print(f"⚠️ Telegram API da xato: {r.get('description')}")
-                if urinish < 2:
-                    print("Qayta urinib ko'rilmoqda...")
-                    time.sleep(5)
-                else:
-                    print("❌ Post yuborish muvaffaqiyatsiz yakunlandi.")
-                    sys.exit(1)
+                print(f"⚠️ Telegram API da matn xatosi: {r.get('description')}")
+                time.sleep(5)
+                
+        if success:
+            print("✅ Matn yuborildi. Endi audio yuborilmoqda...")
+            url_audio = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendAudio"
+            with open(audio_file, 'rb') as audio:
+                files = {'audio': audio}
+                data = {
+                    'chat_id': CHANNEL_ID, 
+                    'title': tanlangan_mavzu[:50] + "...", 
+                    'performer': 'Madina (AI)'
+                }
+                for urinish in range(3):
+                    r_audio = requests.post(url_audio, data=data, files=files).json()
+                    if r_audio.get("ok"):
+                        print("✅ Islomiy post va AUDIO kanalga muvaffaqiyatli yuborildi!")
+                        break
+                    else:
+                        print(f"⚠️ Telegram API da audio xatosi: {r_audio.get('description')}")
+                        time.sleep(5)
+        else:
+            print("❌ Post yuborish muvaffaqiyatsiz yakunlandi.")
+            sys.exit(1)
                     
     except Exception as e:
         print(f"❌ Gemini API yoki tarmoqda xatolik: {e}")

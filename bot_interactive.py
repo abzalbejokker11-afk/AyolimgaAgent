@@ -44,13 +44,14 @@ async def generate_and_send_post(bot: Bot, chat_id: int, task_type: str):
 Sening vazifang mo'minalar, ayollar va umumiy musulmonlar kanali uchun bitta chiroyli post tayyorlash.
 Bugungi maxsus mavzu: {tanlangan_mavzu}
 
-Qoidalar:
-1. Har safar mutlaqo YANGI va TAKRORLANMAS ma'lumot (boshqa hikoya, boshqa hadis, boshqa oyat) topib yoz.
-2. Post matni juda samimiy, o'quvchining imonini ziyoda qiladigan, ibratli va tushunarli tilda bo'lsin.
-3. Kerakli joylarda go'zal emojilardan me'yorida foydalan.
-4. Post oxirida albatta qandaydir chiroyli duo yoki xulosa bilan yakunla.
-5. Post uzunligi Telegramga mos (taxminan 800-1500 belgi) bo'lsin.
-6. Faqat toza matn yozgin, qo'shimcha so'zlar kerak emas."""
+QAT'IY QOIDALAR:
+1. HECH QACHON salomlashma ("Assalomu alaykum", "Hurmatli obunachilar" kabi so'zlarsiz TO'G'RIDAN-TO'G'RI mavzuni boshla).
+2. Matn robotga o'xshamasin! Diktor (notiq) o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan. Qisqa va ta'sirli jumlalar tuz.
+3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari yoki Sahih hadislar). 
+4. Mavzuga doir qilinmasligi kerak bo'lgan narsalar (gunohlar, xatolar) haqida ham ogohlantirib, to'g'ri yo'l ko'rsat.
+5. Har safar mutlaqo YANGI ma'lumot topib yoz.
+6. Post oxirida chiroyli duo yoki xulosa bilan yakunla.
+7. Faqat toza matn yozgin, qo'shimcha izohlar kerak emas."""
 
     try:
         response = model.generate_content(prompt)
