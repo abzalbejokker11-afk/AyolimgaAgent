@@ -12,12 +12,25 @@ def home():
 def test_tts():
     import asyncio
     import edge_tts
+    import requests
     try:
+        # Fetch a free proxy
+        r = requests.get("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt")
+        proxies = r.text.strip().split('\n')
+        # Try a few proxies
         async def run_tts():
-            comm = edge_tts.Communicate("Salom", "uz-UZ-MadinaNeural")
-            await comm.save("test.mp3")
-        asyncio.run(run_tts())
-        return "TTS Success!"
+            for p in proxies[10:20]:  # pick some random ones
+                proxy = f"http://{p.strip()}"
+                try:
+                    comm = edge_tts.Communicate("Salom", "uz-UZ-MadinaNeural", proxy=proxy)
+                    await comm.save("test.mp3")
+                    return f"Success with {proxy}"
+                except Exception as e:
+                    continue
+            raise Exception("All proxies failed")
+            
+        res = asyncio.run(run_tts())
+        return res
     except Exception as e:
         return f"TTS Failed: {e}"
 
