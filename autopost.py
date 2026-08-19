@@ -97,15 +97,14 @@ QAT'IY QOIDALAR:
         
         # Telegramga avval matn yuborish
         url_text = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload_text = {
+        payload = {
             "chat_id": CHANNEL_ID,
-            "text": text,
-            "parse_mode": "HTML"
+            "text": text
         }
         
         success = False
         for urinish in range(3):
-            r = requests.post(url_text, json=payload_text).json()
+            r = requests.post(url_text, json=payload).json()
             if r.get("ok"):
                 success = True
                 break

@@ -70,7 +70,7 @@ QAT'IY QOIDALAR:
         
         await bot.send_message(chat_id, "✅ Audio tayyor! Kanalga yuborilmoqda...")
         
-        await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="HTML")
+        await bot.send_message(chat_id=CHANNEL_ID, text=text)
         
         audio_input = FSInputFile(audio_file)
         await bot.send_audio(
