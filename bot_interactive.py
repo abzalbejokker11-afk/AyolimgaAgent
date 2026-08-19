@@ -17,71 +17,26 @@ GEMINI_KEY = os.environ.get("GEMINI_KEY", "BU_YERGA_KALIT_YOZING")
 router = Router()
 
 async def generate_and_send_post(bot: Bot, chat_id: int, task_type: str):
-    await bot.send_message(chat_id, f"⏳ '{task_type}' bo'yicha post va audio tayyorlanmoqda. Bu biroz vaqt olishi mumkin...")
+    import requests
+    url = "https://api.github.com/repos/abzalbejokker11-afk/AyolimgaAgent/actions/workflows/post.yml/dispatches"
     
-    genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-3.5-flash')
+    GH_TOKEN = os.environ.get("GH_TOKEN", "BU_YERGA_TOKEN_YOZING")
     
-    if task_type == "hadis":
-        tanlangan_mavzu = "Imom Navaviyning 40 hadisidan biri yoki Payg'ambarimizning (s.a.v) go'zal hadislaridan biri va uning sharhi"
-    elif task_type == "oila":
-        tanlangan_mavzu = "Islomda oila totuvligi, er-xotin huquqlari, erga hurmat, farzand tarbiyasi haqida"
-    elif task_type == "quron":
-        tanlangan_mavzu = "Qur'oni Karimdagi ibratli bir oyat yoki suraning qisqacha go'zal tafsiri va xulosasi"
-    else:
-        mavzular = [
-            "Payg'ambarimiz (s.a.v) hayotlaridan oila va ayollarga go'zal muomala haqida ibratli voqea",
-            "Sahobiy ayollar (masalan, Xadicha onamiz, Oisha onamiz, Fotima onamiz) hayotidan ibratli hikoya",
-            "Mo'mina ayolning hayosi, tili va go'zal axloqining fazilatlari",
-            "Shukur qilishning fazilati va ne'matlarga qanoat haqida ta'sirli qissa",
-            "Jannat ta'rifi va Allohning soliha ayollarga tayyorlagan mukofotlari",
-            "Duo qilishning odoblari va qabul bo'ladigan duolarning siri",
-            "Mehr-oqibat, ota-onaga yaxshilik va qarindoshlik rishtalarini bog'lashning fazilati"
-        ]
-        tanlangan_mavzu = random.choice(mavzular)
-
-    prompt = f"""Sen Islom dinini juda chuqur biladigan, samimiy va chiroyli so'zlaydigan ilm ahlisan. 
-Sening vazifang mo'minalar, ayollar va umumiy musulmonlar kanali uchun bitta chiroyli post tayyorlash.
-Bugungi maxsus mavzu: {tanlangan_mavzu}
-
-QAT'IY QOIDALAR:
-1. HECH QACHON salomlashma ("Assalomu alaykum", "Hurmatli obunachilar" kabi so'zlarsiz TO'G'RIDAN-TO'G'RI mavzuni boshla).
-2. Matn robotga o'xshamasin! Diktor (notiq) o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan. Qisqa va ta'sirli jumlalar tuz.
-3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari yoki Sahih hadislar). 
-4. Mavzuga doir qilinmasligi kerak bo'lgan narsalar (gunohlar, xatolar) haqida ham ogohlantirib, to'g'ri yo'l ko'rsat.
-5. Har safar mutlaqo YANGI ma'lumot topib yoz.
-6. Post oxirida chiroyli duo yoki xulosa bilan yakunla.
-7. Faqat toza matn yozgin, qo'shimcha izohlar kerak emas."""
-
+    headers = {
+        "Authorization": f"Bearer {GH_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    data = {
+        "ref": "main"
+    }
+    
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        
-        if not text:
-            await bot.send_message(chat_id, "❌ Model bo'sh javob qaytardi.")
-            return
-
-        await bot.send_message(chat_id, "✅ Matn yaratildi. Audio tayyorlanmoqda (Madina ovozi)...")
-        
-        clean_text = re.sub(r'[*_]', '', text)
-        audio_file = "post_audio.mp3"
-        communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
-        await communicate.save(audio_file)
-        
-        await bot.send_message(chat_id, "✅ Audio tayyor! Kanalga yuborilmoqda...")
-        
-        await bot.send_message(chat_id=CHANNEL_ID, text=text)
-        
-        audio_input = FSInputFile(audio_file)
-        await bot.send_audio(
-            chat_id=CHANNEL_ID, 
-            audio=audio_input, 
-            title=tanlangan_mavzu[:50] + "...", 
-            performer="Madina (AI)"
-        )
-        
-        await bot.send_message(chat_id, "🎉 Post va Audio muvaffaqiyatli kanalga yuborildi!")
-        
+        r = requests.post(url, headers=headers, json=data)
+        if r.status_code == 204:
+            await bot.send_message(chat_id, "✅ Buyruq bulutli serverga (GitHub Actions) yuborildi!\n\nBu jarayon taxminan 30-40 soniya oladi. Tayyor bo'lgach avtomatik kanalga tushadi. (Render xatoliklari aylanib o'tildi!)")
+        else:
+            await bot.send_message(chat_id, f"⚠️ Bulutli serverga ulanishda muammo: {r.status_code}\n{r.text}")
     except Exception as e:
         await bot.send_message(chat_id, f"❌ Xatolik yuz berdi: {e}")
 
