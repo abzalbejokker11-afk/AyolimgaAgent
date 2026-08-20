@@ -2,6 +2,15 @@ import os
 import sys
 import time
 import requests
+
+# GitHub Actions'da workflow faylini o'zgartira olmasligimiz sababli, kutubxonani shu yerda o'rnatamiz
+try:
+    import edge_tts
+except ImportError:
+    print("⏳ edge-tts o'rnatilmoqda...")
+    os.system(f"{sys.executable} -m pip install edge-tts")
+    import edge_tts
+
 import google.generativeai as genai
 import random
 
