@@ -26,7 +26,22 @@ if TELEGRAM_TOKEN == "BU_YERGA_TOKEN_YOZING" or GEMINI_KEY == "BU_YERGA_KALIT_YO
     sys.exit(1)
 
 def post_yuborish():
-    print("⏳ Islomiy post yaratilmoqda...")
+    import datetime
+    import os
+    
+    # GITHUB_EVENT_NAME = 'workflow_dispatch' bo'lsa, uni manual yoki Render tomonidan yuborilgan deb olamiz
+    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    
+    # Avtomatik GitHub cron orqali kelgan bo'lsa bloklaymiz (chunki Render aniq vaqtida ishga tushiradi)
+    if not is_manual:
+        print("Ushbu post GitHub Cron orqali keldi. Render API aniq vaqtlarni boshqarayotgani uchun bu to'xtatildi.")
+        sys.exit(0)
+
+    # O'zbekiston vaqti (UTC+5)
+    hozirgi_vaqt = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
+    soat = hozirgi_vaqt.hour
+
+    print(f"⏳ Islomiy post yaratilmoqda... (Soat: {soat}:00, API orqali keldi)")
     genai.configure(api_key=GEMINI_KEY)
     
     # Eng yaxshi va barqaror model
