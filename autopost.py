@@ -85,7 +85,23 @@ QAT'IY QOIDALAR:
             print("❌ Model bo'sh javob qaytardi.")
             sys.exit(1)
             
-        print("✅ Post yaratildi! Audio tayyorlanmoqda (Madina ovozi)...")
+        print("✅ Post yaratildi! Rasm tayyorlanmoqda...")
+        
+        # Rasm uchun prompt yaratish
+        img_prompt_req = f"Based on this islamic text, write a short and beautiful English prompt for an AI image generator (like Midjourney). The image should represent peace, islamic aesthetics, nature, or architecture. NO humans, NO faces. Just scenery or beautiful abstract concepts. Return ONLY the English prompt. Text: {text[:500]}"
+        img_prompt_resp = model.generate_content(img_prompt_req)
+        img_prompt = img_prompt_resp.text.strip()
+        
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(img_prompt)
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
+        
+        # Rasmni yuklab olish
+        img_data = requests.get(image_url).content
+        with open("post_image.jpg", 'wb') as handler:
+            handler.write(img_data)
+        
+        print("✅ Rasm tayyor! Audio tayyorlanmoqda (Madina ovozi)...")
         
         # Matnni tozalash (audio o'qiyotganda xalaqit bermasligi uchun)
         import re
@@ -104,7 +120,12 @@ QAT'IY QOIDALAR:
         asyncio.run(generate_audio())
         print("✅ Audio tayyor! Telegramga yuborilmoqda...")
         
-        # Telegramga avval matn yuborish
+        # Telegramga avval rasm yuborish
+        url_photo = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+        with open("post_image.jpg", 'rb') as photo:
+            requests.post(url_photo, data={'chat_id': CHANNEL_ID}, files={'photo': photo})
+            
+        # Keyin matn yuborish
         url_text = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {
             "chat_id": CHANNEL_ID,
@@ -134,7 +155,7 @@ QAT'IY QOIDALAR:
                 for urinish in range(3):
                     r_audio = requests.post(url_audio, data=data, files=files).json()
                     if r_audio.get("ok"):
-                        print("✅ Islomiy post va AUDIO kanalga muvaffaqiyatli yuborildi!")
+                        print("✅ Islomiy post, RASM va AUDIO kanalga muvaffaqiyatli yuborildi!")
                         break
                     else:
                         print(f"⚠️ Telegram API da audio xatosi: {r_audio.get('description')}")
