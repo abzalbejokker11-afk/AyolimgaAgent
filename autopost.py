@@ -2,8 +2,13 @@ import os
 import sys
 import time
 import requests
+import datetime
+import random
+import re
+import urllib.parse
+import asyncio
 
-# GitHub Actions'da workflow faylini o'zgartira olmasligimiz sababli, kutubxonani shu yerda o'rnatamiz
+# GitHub Actions uchun dinamik o'rnatish
 try:
     import edge_tts
 except ImportError:
@@ -12,176 +17,186 @@ except ImportError:
     import edge_tts
 
 import google.generativeai as genai
-import random
 
-# Telegram kanalingiz ID si (Odatda Telegram kanallar oldida -100 bo'ladi, agar ishlamasa -100 siz yozib ko'rasiz)
 CHANNEL_ID = "-1004422906049"
-
-# Tokenlar (Maxfiy muhit o'zgaruvchilaridan olinadi)
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "BU_YERGA_TOKEN_YOZING")
-GEMINI_KEY     = os.environ.get("GEMINI_KEY", "BU_YERGA_KALIT_YOZING")
+GEMINI_KEY = os.environ.get("GEMINI_KEY", "BU_YERGA_KALIT_YOZING")
 
-if TELEGRAM_TOKEN == "BU_YERGA_TOKEN_YOZING" or GEMINI_KEY == "BU_YERGA_KALIT_YOZING":
-    print("❌ Xato: TELEGRAM_TOKEN yoki GEMINI_KEY muhit o'zgaruvchilarida topilmadi!")
-    sys.exit(1)
-
-def post_yuborish():
-    import datetime
-    import os
-    
-    # GITHUB_EVENT_NAME = 'workflow_dispatch' bo'lsa, uni manual yoki Render tomonidan yuborilgan deb olamiz
-    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    
-    # Avtomatik GitHub cron orqali kelgan bo'lsa bloklaymiz (chunki Render aniq vaqtida ishga tushiradi)
-    if not is_manual:
-        print("Ushbu post GitHub Cron orqali keldi. Render API aniq vaqtlarni boshqarayotgani uchun bu to'xtatildi.")
-        sys.exit(0)
-
-    # O'zbekiston vaqti (UTC+5)
-    hozirgi_vaqt = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
-    soat = hozirgi_vaqt.hour
-
-    print(f"⏳ Islomiy post yaratilmoqda... (Soat: {soat}:00, API orqali keldi)")
-    genai.configure(api_key=GEMINI_KEY)
-    
-    # Eng yaxshi va barqaror model
-    model = genai.GenerativeModel('gemini-3.5-flash')
-    
-    # 20 dan ortiq turli xil islomiy, tarbiyaviy va oilaviy mavzular
-    mavzular = [
+MAVZULAR_BAZASI = {
+    "Tarix va Ibrat": [
         "Payg'ambarimiz (s.a.v) hayotlaridan oila va ayollarga go'zal muomala haqida ibratli voqea",
-        "Qur'oni Karimdagi biror suraning yoki oyatning qisqacha go'zal tafsiri va bugungi kunga xulosasi",
-        "Sahobiy ayollar (masalan, Xadicha onamiz, Oisha onamiz, Fotima onamiz) hayotidan ibratli hikoya",
+        "Sahobiy ayollar (Xadicha, Oisha, Fotima onalarimiz) hayotidan hikmatli qissa",
+        "Qadimgi islom ulamolari va ularning onalari o'rtasidagi go'zal mehr-oqibat",
+        "Tarixdagi buyuk islom olimlari onalarining farzand tarbiyasidagi qahramonliklari",
+        "Islom tarixida ilm tarqatgan fozila ayollar haqida"
+    ],
+    "Oila va Tarbiya": [
         "Islomda farzand tarbiyasi: onaning mas'uliyati va go'zal nasihatlar",
-        "Imom Navaviyning 40 hadisidan biri va uning bugungi hayotimizdagi o'rni",
+        "Islomda er-xotin huquqlari, o'zaro mehr va baxtli oila qurish sirlari",
+        "Oila totuvligi: Erga chiroyli muomala qilish va uning xizmatini e'zozlash",
+        "Erini rozi qilgan ayolning darajasi va unga va'da qilingan jannat mukofotlari",
+        "Islomda erning o'rni, unga itoat etish va hurmat ko'rsatishning ulug' fazilatlari",
+        "Er-xotin o'rtasidagi muhabbat: ko'ngil topish va doimiy qo'llab-quvvatlash"
+    ],
+    "Ruhiyat va Axloq": [
         "Mo'mina ayolning hayosi, tili va go'zal axloqining fazilatlari",
         "Shukur qilishning fazilati va ne'matlarga qanoat haqida ta'sirli qissa",
         "G'iybat, hasad va yomon gumondan saqlanishning ruhiy va diniy ahamiyati",
+        "Sabr qilishning fazilati: Qiyinchiliklar va sinovlar ortidan keladigan yengillik",
+        "Vaqtning qadri va islomda ayol kishi umrini qanday mazmunli o'tkazishi kerakligi",
+        "Yaxshi gumonda bo'lish, insonlar xatosini kechirish va qalbni tozalashning ulug'ligi",
+        "Mehr-oqibat, ota-onaga yaxshilik va qarindoshlik rishtalarini bog'lashning fazilati"
+    ],
+    "Ibodat va Qur'on": [
+        "Qur'oni Karimdagi biror suraning yoki oyatning qisqacha go'zal tafsiri",
+        "Imom Navaviyning 40 hadisidan biri va uning bugungi hayotimizdagi o'rni",
         "Jannat ta'rifi va Allohning soliha ayollarga tayyorlagan mukofotlari",
         "Namozning inson ruhiyatiga, qalb xotirjamligiga va ro'zg'or barakasiga ta'siri",
-        "Sabr qilishning fazilati: Qiyinchiliklar va sinovlar ortidan keladigan yengillik",
-        "Islomda er-xotin huquqlari, o'zaro mehr va baxtli oila qurish sirlari",
-        "Allohning go'zal ismlari (Asma ul-Husna) dan birining chuqur ma'nosi va hayotimizdagi o'rni",
-        "Qadimgi ulamolar hayotidan ibratli hikmatlar va ularning ma'naviy sharhi",
-        "Vaqtning qadri va islomda ayol kishi umrini qanday mazmunli o'tkazishi kerakligi",
+        "Allohning go'zal ismlari (Asma ul-Husna) dan birining hayotimizdagi o'rni",
         "Tungi ibodatlar va Tahajjud namozining mo'min qalbini nurga to'ldiruvchi fazilati",
         "Duo qilishning odoblari va qabul bo'ladigan duolarning siri",
-        "Mehr-oqibat, ota-onaga yaxshilik va qarindoshlik rishtalarini bog'lashning fazilati",
-        "Yaxshi gumonda bo'lish va insonlar xatosini kechirish, qalbni tozalashning ulug'ligi",
-        "Tarixdagi buyuk islom olimlari onalarining farzand tarbiyasidagi qahramonliklari va yondashuvi",
-        "Rizqning Allohdan ekanligi, halol rizq va uyimizdagi baraka omillari",
-        "Qur'on o'qish va tinglashning fazilati, uning xonadonga olib kiradigan farištalari",
-        "Islomda erning o'rni, unga itoat etish va hurmat ko'rsatishning ulug' fazilatlari",
-        "Erini rozi qilgan ayolning darajasi va unga va'da qilingan jannat mukofotlari",
-        "Oila totuvligi: Erga chiroyli muomala qilish va uning xizmatini e'zozlash",
-        "Er-xotin o'rtasidagi muhabbat: Erining ko'nglini topish va uni har doim qo'llab-quvvatlash sirlari"
+        "Qur'on o'qish va tinglashning fazilati, uning xonadonga olib kiradigan farishtalari",
+        "Rizqning Allohdan ekanligi, halol rizq va uyimizdagi baraka omillari"
     ]
-    tanlangan_mavzu = random.choice(mavzular)
-    
-    prompt = f"""Sen Islom dinini juda chuqur biladigan, samimiy va chiroyli so'zlaydigan ilm ahlisan. 
-Sening vazifang mo'minalar, ayollar va umumiy musulmonlar kanali uchun bitta chiroyli post tayyorlash.
-Bugungi maxsus mavzu: {tanlangan_mavzu}
+}
+
+def generate_text_gemini(model, kategoriya, mavzu):
+    prompt = f"""Sen Islom dinini juda chuqur biladigan, samimiy va chiroyli so'zlaydigan olim(a)san. 
+Sening vazifang mo'minalar va umumiy musulmonlar kanali uchun bitta juda ta'sirli, chiroyli post tayyorlash.
+Kategoriya: {kategoriya}
+Bugungi mavzu: {mavzu}
 
 QAT'IY QOIDALAR:
 1. HECH QACHON salomlashma ("Assalomu alaykum", "Hurmatli obunachilar" kabi so'zlarsiz TO'G'RIDAN-TO'G'RI mavzuni boshla).
-2. Matn robotga o'xshamasin! Diktor (notiq) o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan. Qisqa va ta'sirli jumlalar tuz.
-3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari yoki Sahih hadislar). 
-4. Mavzuga doir qilinmasligi kerak bo'lgan narsalar (gunohlar, xatolar) haqida ham ogohlantirib, to'g'ri yo'l ko'rsat.
-5. Har safar mutlaqo YANGI ma'lumot topib yoz.
-6. Post oxirida chiroyli duo yoki xulosa bilan yakunla.
-7. Faqat toza matn yozgin, qo'shimcha izohlar kerak emas."""
+2. Matn robotga o'xshamasin! Diktor o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan.
+3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari, sura nomlari yoki Sahih hadislar). 
+4. Odamlar hayotida uchraydigan xatolar va ulardan qanday saqlanish kerakligi haqida chuqur ibratli xulosalar ber.
+5. Har safar mutlaqo YANGI ma'lumot topib yoz. Eskirgan yoki yod bo'lib ketgan gaplarni qaytarma.
+6. Post oxirida chiroyli duo bilan yakunla.
+7. Faqat toza matn yozgin, qo'shimcha izohlar, emojilar va formatlash belgilari (**, _) ni minimal darajada ishlat yoki umuman ishlatma.
+"""
+    
+    for urinish in range(3):
+        try:
+            response = model.generate_content(prompt)
+            if response.text:
+                return response.text.strip()
+        except Exception as e:
+            print(f"⚠️ Matn yaratishda xato (urinish {urinish+1}): {e}")
+            time.sleep(3)
+    return None
+
+def generate_image_pollinations(model, text):
+    prompt_req = f"""Based on this islamic text, write a short, vivid, and highly descriptive English prompt for an AI image generator (like Midjourney). 
+The image should be breathtaking, peaceful, high quality (8k, unreal engine, cinematic lighting).
+Theme: Islamic aesthetics, nature, abstract peace, or beautiful architecture.
+CRITICAL RULE: NO humans, NO faces, NO text in the image. Just scenery, geometry, or abstract beauty.
+Return ONLY the English prompt string. Text to base it on: {text[:500]}"""
     
     try:
-        # API ga so'rov yuborish
-        response = model.generate_content(prompt)
-        text = response.text.strip()
+        resp = model.generate_content(prompt_req)
+        img_prompt = resp.text.strip()
+        encoded = urllib.parse.quote(img_prompt)
+        # Using pollination AI
+        image_url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true"
         
-        if not text:
-            print("❌ Model bo'sh javob qaytardi.")
-            sys.exit(1)
-            
-        print("✅ Post yaratildi! Rasm tayyorlanmoqda...")
-        
-        # Rasm uchun prompt yaratish
-        img_prompt_req = f"Based on this islamic text, write a short and beautiful English prompt for an AI image generator (like Midjourney). The image should represent peace, islamic aesthetics, nature, or architecture. NO humans, NO faces. Just scenery or beautiful abstract concepts. Return ONLY the English prompt. Text: {text[:500]}"
-        img_prompt_resp = model.generate_content(img_prompt_req)
-        img_prompt = img_prompt_resp.text.strip()
-        
-        import urllib.parse
-        encoded_prompt = urllib.parse.quote(img_prompt)
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
-        
-        # Rasmni yuklab olish
-        img_data = requests.get(image_url).content
-        with open("post_image.jpg", 'wb') as handler:
-            handler.write(img_data)
-        
-        print("✅ Rasm tayyor! Audio tayyorlanmoqda (Madina ovozi)...")
-        
-        # Matnni tozalash (audio o'qiyotganda xalaqit bermasligi uchun)
-        import re
-        import asyncio
-        import edge_tts
-        
-        # Emojilar va yulduzchalarni olib tashlash
-        clean_text = re.sub(r'[*_]', '', text) # qalin va qiya yozuv belgilari
-        audio_file = "post_audio.mp3"
-        
-        async def generate_audio():
-            # Madina ovozi (Ayol kishi)
-            communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
-            await communicate.save(audio_file)
-            
-        asyncio.run(generate_audio())
-        print("✅ Audio tayyor! Telegramga yuborilmoqda...")
-        
-        # Telegramga avval rasm yuborish
-        url_photo = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
-        with open("post_image.jpg", 'rb') as photo:
-            requests.post(url_photo, data={'chat_id': CHANNEL_ID}, files={'photo': photo})
-            
-        # Keyin matn yuborish
-        url_text = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": CHANNEL_ID,
-            "text": text
-        }
-        
-        success = False
-        for urinish in range(3):
-            r = requests.post(url_text, json=payload).json()
-            if r.get("ok"):
-                success = True
-                break
-            else:
-                print(f"⚠️ Telegram API da matn xatosi: {r.get('description')}")
-                time.sleep(5)
-                
-        if success:
-            print("✅ Matn yuborildi. Endi audio yuborilmoqda...")
-            url_audio = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendAudio"
-            with open(audio_file, 'rb') as audio:
-                files = {'audio': audio}
-                data = {
-                    'chat_id': CHANNEL_ID, 
-                    'title': tanlangan_mavzu[:50] + "...", 
-                    'performer': 'Madina (AI)'
-                }
-                for urinish in range(3):
-                    r_audio = requests.post(url_audio, data=data, files=files).json()
-                    if r_audio.get("ok"):
-                        print("✅ Islomiy post, RASM va AUDIO kanalga muvaffaqiyatli yuborildi!")
-                        break
-                    else:
-                        print(f"⚠️ Telegram API da audio xatosi: {r_audio.get('description')}")
-                        time.sleep(5)
-        else:
-            print("❌ Post yuborish muvaffaqiyatsiz yakunlandi.")
-            sys.exit(1)
-                    
+        r = requests.get(image_url, timeout=15)
+        if r.status_code == 200:
+            file_name = "post_image.jpg"
+            with open(file_name, 'wb') as f:
+                f.write(r.content)
+            return file_name
     except Exception as e:
-        print(f"❌ Gemini API yoki tarmoqda xatolik: {e}")
+        print(f"⚠️ Rasm yaratishda xato: {e}")
+    return None
+
+async def generate_audio_edge(text):
+    file_name = "post_audio.mp3"
+    # Tozalash
+    clean_text = re.sub(r'[*_#]', '', text)
+    try:
+        communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
+        await communicate.save(file_name)
+        return file_name
+    except Exception as e:
+        print(f"⚠️ Audio yaratishda xato: {e}")
+    return None
+
+def send_telegram(method, data, files=None):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/{method}"
+    for urinish in range(3):
+        try:
+            if files:
+                r = requests.post(url, data=data, files=files, timeout=60).json()
+            else:
+                r = requests.post(url, json=data, timeout=30).json()
+            
+            if r.get("ok"):
+                return True
+            else:
+                print(f"⚠️ Telegram API Xato ({method}): {r.get('description')}")
+        except Exception as e:
+            print(f"⚠️ Telegram API Ulanish Xatosi ({method}): {e}")
+        time.sleep(5)
+    return False
+
+def main():
+    if TELEGRAM_TOKEN == "BU_YERGA_TOKEN_YOZING" or GEMINI_KEY == "BU_YERGA_KALIT_YOZING":
+        print("❌ Tokenlar kiritilmagan!")
         sys.exit(1)
 
+    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    
+    if not is_manual:
+        print("🛑 Ushbu post GitHub Cron orqali keldi. Render API nazoratida bo'lgani uchun to'xtatildi.")
+        sys.exit(0)
+
+    now = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
+    print(f"🚀 Dastur ishga tushdi... Soat: {now.hour}:{now.minute}")
+
+    genai.configure(api_key=GEMINI_KEY)
+    model = genai.GenerativeModel('gemini-3.5-flash')
+
+    kategoriya = random.choice(list(MAVZULAR_BAZASI.keys()))
+    mavzu = random.choice(MAVZULAR_BAZASI[kategoriya])
+    print(f"📖 Kategoriya: {kategoriya} | Mavzu: {mavzu}")
+
+    # 1. Matn
+    text = generate_text_gemini(model, kategoriya, mavzu)
+    if not text:
+        print("❌ Matn yaratib bo'lmadi.")
+        sys.exit(1)
+    print("✅ Matn tayyor!")
+
+    # 2. Rasm
+    img_file = generate_image_pollinations(model, text)
+    if img_file:
+        print("✅ Rasm tayyor!")
+    else:
+        print("⚠️ Rasm tayyorlanmadi, davom etamiz.")
+
+    # 3. Audio
+    audio_file = asyncio.run(generate_audio_edge(text))
+    if audio_file:
+        print("✅ Audio tayyor!")
+    else:
+        print("⚠️ Audio tayyorlanmadi, davom etamiz.")
+
+    # 4. Telegramga yuborish
+    if img_file:
+        with open(img_file, 'rb') as f:
+            send_telegram("sendPhoto", data={'chat_id': CHANNEL_ID}, files={'photo': f})
+
+    text_success = send_telegram("sendMessage", data={'chat_id': CHANNEL_ID, 'text': text})
+    
+    if text_success and audio_file:
+        with open(audio_file, 'rb') as f:
+            title_text = mavzu[:50] + "..."
+            send_telegram("sendAudio", 
+                          data={'chat_id': CHANNEL_ID, 'title': title_text, 'performer': 'Madina (AI)'}, 
+                          files={'audio': f})
+
+    print("🎉 Barcha jarayon yakunlandi!")
+
 if __name__ == "__main__":
-    post_yuborish()
+    main()
