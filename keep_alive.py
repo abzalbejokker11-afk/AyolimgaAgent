@@ -42,8 +42,19 @@ def run():
     app.run(host="0.0.0.0", port=port)
 
 def schedule_posts():
+    last_ping_time = time.time()
     while True:
         try:
+            # Har 10 daqiqada (600 soniya) o'zini o'zi ping qilib turadi (Render uxlab qolmasligi uchun)
+            current_time = time.time()
+            if current_time - last_ping_time > 600:
+                print("🔄 Render uxlab qolmasligi uchun self-ping yuborilmoqda...")
+                try:
+                    requests.get("https://ayolimgatg-bot.onrender.com/", timeout=10)
+                except Exception as e:
+                    print("Self-ping xatosi:", e)
+                last_ping_time = current_time
+
             # O'zbekiston vaqti
             now = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
             # Soat 07:00, 08:00 yoki 10:00 va daqiqa 0 bo'lsa
