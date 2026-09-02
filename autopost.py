@@ -24,56 +24,62 @@ GEMINI_KEY = os.environ.get("GEMINI_KEY", "BU_YERGA_KALIT_YOZING")
 
 MAVZULAR_BAZASI = {
     "Tarix va Ibrat": [
-        "Payg'ambarimiz (s.a.v) hayotlaridan oila va ayollarga go'zal muomala haqida ibratli voqea",
-        "Sahobiy ayollar (Xadicha, Oisha, Fotima onalarimiz) hayotidan hikmatli qissa",
-        "Qadimgi islom ulamolari va ularning onalari o'rtasidagi go'zal mehr-oqibat",
-        "Tarixdagi buyuk islom olimlari onalarining farzand tarbiyasidagi qahramonliklari",
-        "Islom tarixida ilm tarqatgan fozila ayollar haqida"
+        "Xadicha onamizning fidoyiligi (Qur'on va Hadis asosida)",
+        "Fotima onamizning ko'z yoshlari va qanoati",
+        "Ona va bola mehri: Tarixdan yig'latadigan qissa",
+        "Sahobalar hayotidan sabr va iroda darsi",
+        "Ilm yo'lidagi fozila ayollar"
     ],
     "Oila va Tarbiya": [
-        "Islomda farzand tarbiyasi: onaning mas'uliyati va go'zal nasihatlar",
-        "Islomda er-xotin huquqlari, o'zaro mehr va baxtli oila qurish sirlari",
-        "Oila totuvligi: Erga chiroyli muomala qilish va uning xizmatini e'zozlash",
-        "Erini rozi qilgan ayolning darajasi va unga va'da qilingan jannat mukofotlari",
-        "Islomda erning o'rni, unga itoat etish va hurmat ko'rsatishning ulug' fazilatlari",
-        "Er-xotin o'rtasidagi muhabbat: ko'ngil topish va doimiy qo'llab-quvvatlash"
+        "Ona duosining mo'jizasi va farzand tarbiyasi",
+        "Er-xotin o'rtasidagi sof muhabbat (Hadis va Oyat)",
+        "Oila totuvligi: Kechirimli bo'lish fazilati",
+        "Jannatga yetaklovchi soliha ayol",
+        "Erni rozi qilish: Ajr va mukofotlar",
+        "Uyimizdagi farishtalar: Halol luqma va baraka"
     ],
     "Ruhiyat va Axloq": [
-        "Mo'mina ayolning hayosi, tili va go'zal axloqining fazilatlari",
-        "Shukur qilishning fazilati va ne'matlarga qanoat haqida ta'sirli qissa",
-        "G'iybat, hasad va yomon gumondan saqlanishning ruhiy va diniy ahamiyati",
-        "Sabr qilishning fazilati: Qiyinchiliklar va sinovlar ortidan keladigan yengillik",
-        "Vaqtning qadri va islomda ayol kishi umrini qanday mazmunli o'tkazishi kerakligi",
-        "Yaxshi gumonda bo'lish, insonlar xatosini kechirish va qalbni tozalashning ulug'ligi",
-        "Mehr-oqibat, ota-onaga yaxshilik va qarindoshlik rishtalarini bog'lashning fazilati"
+        "Qalb xotirjamligi: Zikr va istig'for",
+        "Hasad va g'iybatdan uzoq toza qalb",
+        "Sabrning shirin mevasi: Qiyinchilik ortidagi yengillik",
+        "Shukur qiling: Allohning senga bergan ne'matlari",
+        "Vaqt g'animat: Umrni qanday o'tkazyapmiz?",
+        "Yaxshi gumon: Xatolarni kechirish ulug'ligi",
+        "Qarindoshlik rishtalari va mehr-oqibat"
     ],
     "Ibodat va Qur'on": [
-        "Qur'oni Karimdagi biror suraning yoki oyatning qisqacha go'zal tafsiri",
-        "Imom Navaviyning 40 hadisidan biri va uning bugungi hayotimizdagi o'rni",
-        "Jannat ta'rifi va Allohning soliha ayollarga tayyorlagan mukofotlari",
-        "Namozning inson ruhiyatiga, qalb xotirjamligiga va ro'zg'or barakasiga ta'siri",
-        "Allohning go'zal ismlari (Asma ul-Husna) dan birining hayotimizdagi o'rni",
-        "Tungi ibodatlar va Tahajjud namozining mo'min qalbini nurga to'ldiruvchi fazilati",
-        "Duo qilishning odoblari va qabul bo'ladigan duolarning siri",
-        "Qur'on o'qish va tinglashning fazilati, uning xonadonga olib kiradigan farishtalari",
-        "Rizqning Allohdan ekanligi, halol rizq va uyimizdagi baraka omillari"
+        "Jannat sog'inchi: Allohning va'dasi",
+        "Namoz: Qalb jarohatlariga malham",
+        "Tahajjud sirlari: Tungi ko'z yoshlar",
+        "Qabul bo'ladigan duolar siri",
+        "Allohning go'zal ismlaridan tafakkur",
+        "Qur'on o'qilgan xonadonning nuri",
+        "Tavba: Allohning kechirimli ekani"
+    ],
+    "Kun Hadisi va Oyati": [
+        "Yurakni larzaga soluvchi Kun Hadisi va Oyati",
+        "Insonni o'ylantiradigan qisqa Hadis va uning Oyatdagi tasdig'i",
+        "Gunohlarga to'siq bo'luvchi Hadis va Oyat",
+        "Qiyomat kunini eslatuvchi qo'rqinchli va umidli dalillar",
+        "Allohning ruxmati haqida yig'latuvchi Hadis va Oyat"
     ]
 }
 
 def generate_text_gemini(model, kategoriya, mavzu):
     prompt = f"""Sen Islom dinini juda chuqur biladigan, samimiy va chiroyli so'zlaydigan olim(a)san. 
-Sening vazifang mo'minalar va umumiy musulmonlar kanali uchun bitta juda ta'sirli, chiroyli post tayyorlash.
+Vazifang mo'minalar va musulmonlar kanali uchun bitta juda QISQA, LONDAN, HIKMATLI va YURAKKA TEGADIGAN (ta'sirli, yig'latadigan) post tayyorlash.
 Kategoriya: {kategoriya}
 Bugungi mavzu: {mavzu}
 
 QAT'IY QOIDALAR:
-1. HECH QACHON salomlashma ("Assalomu alaykum", "Hurmatli obunachilar" kabi so'zlarsiz TO'G'RIDAN-TO'G'RI mavzuni boshla).
-2. Matn robotga o'xshamasin! Diktor o'qiganda juda chiroyli, ravon va ohangdor chiqishi uchun tinish belgilaridan (vergul, nuqta, tire) o'rnida va aniq foydalan.
-3. Haqiqiy va ishonchli isbotlar keltir (Aniq Qur'on oyatlari, sura nomlari yoki Sahih hadislar). 
-4. Odamlar hayotida uchraydigan xatolar va ulardan qanday saqlanish kerakligi haqida chuqur ibratli xulosalar ber.
-5. Har safar mutlaqo YANGI ma'lumot topib yoz. Eskirgan yoki yod bo'lib ketgan gaplarni qaytarma.
-6. Post oxirida chiroyli duo bilan yakunla.
-7. Faqat toza matn yozgin, qo'shimcha izohlar, emojilar va formatlash belgilari (**, _) ni minimal darajada ishlat yoki umuman ishlatma.
+1. HECH QACHON salomlashma. TO'G'RIDAN-TO'G'RI mavzuni boshla.
+2. Har bir postda albatta BITTADAN QUR'ON OYATI va BITTADAN SAHIH HADIS keltir (yoki faqat oyat/hadis, qaysi biri mos bo'lsa. Eng yaxshisi - ikkalasini bir-biriga bog'lab, chuqur ma'no chiqarib berish).
+3. Oyat yoki Hadisni keltirganda kitoblardan ANIQLIK bilan dalil qilib yoz (Masalan: Imom Buxoriy rivoyati, Baqara surasi 152-oyat).
+4. Matn qisqa, tushunarli va inson qalbini titratadigan darajada ta'sirli bo'lsin. Uzundan-uzoq leksiya qilmang.
+5. Diktor o'qiganda juda chiroyli va ohangdor chiqishi uchun tinish belgilaridan o'rnida foydalan. Matn robotga umuman o'xshamasin!
+6. Har safar mutlaqo YANGI ma'lumot topib yoz.
+7. Post oxirida qisqagina, qalbni eritadigan duo bilan yakunla.
+8. Faqat toza matn yozgin, emojilarni minimal ishlating, markdown (** , _) larni ishlatmang.
 """
     
     for urinish in range(3):
