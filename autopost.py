@@ -120,8 +120,16 @@ async def generate_audio_edge(text):
     file_name = "post_audio.mp3"
     # Tozalash
     clean_text = re.sub(r'[*_#]', '', text)
+    
     try:
-        communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural")
+        from normalizer import normalize_for_tts
+        clean_text = normalize_for_tts(clean_text)
+    except Exception as e:
+        print("⚠️ Normalizer topilmadi yoki xato:", e)
+
+    try:
+        # Rate ni -10% qilib sekinlashtiramiz, emotsiya kuchayadi
+        communicate = edge_tts.Communicate(clean_text, "uz-UZ-MadinaNeural", rate="-10%")
         await communicate.save(file_name)
         return file_name
     except Exception as e:
