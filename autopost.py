@@ -80,6 +80,7 @@ QAT'IY QOIDALAR:
 6. Har safar mutlaqo YANGI ma'lumot topib yoz.
 7. Post oxirida qisqagina, qalbni eritadigan duo bilan yakunla.
 8. Faqat toza matn yozgin, emojilarni minimal ishlating, markdown (** , _) larni ishlatmang.
+9. MAVZU NOMINI, SARLAVHANI va KATEGORIYANI UMUMAN YOZMA! To'g'ridan-to'g'ri faqat maqolani boshla (diktor darhol o'qishni boshlashi uchun).
 """
     
     for urinish in range(3):
@@ -201,11 +202,10 @@ def main():
         with open(img_file, 'rb') as f:
             send_telegram("sendPhoto", data={'chat_id': CHANNEL_ID}, files={'photo': f})
 
-    text_success = send_telegram("sendMessage", data={'chat_id': CHANNEL_ID, 'text': text})
-    
-    if text_success and audio_file:
+    # Matn yuborish o'chirib qo'yildi, faqat MP3 yuboriladi
+    if audio_file:
         with open(audio_file, 'rb') as f:
-            title_text = mavzu[:50] + "..."
+            title_text = mavzu[:50] + "..." if len(mavzu) > 50 else mavzu
             send_telegram("sendAudio", 
                           data={'chat_id': CHANNEL_ID, 'title': title_text, 'performer': 'Madina (AI)'}, 
                           files={'audio': f})
