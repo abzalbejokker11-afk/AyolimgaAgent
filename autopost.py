@@ -161,13 +161,17 @@ def main():
         sys.exit(1)
 
     is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    
-    if not is_manual:
-        print("🛑 Ushbu post GitHub Cron orqali keldi. Render API nazoratida bo'lgani uchun to'xtatildi.")
-        sys.exit(0)
-
     now = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
     print(f"🚀 Dastur ishga tushdi... Soat: {now.hour}:{now.minute}")
+
+    # Agar cron orqali kelgan bo'lsa, faqat 09:00, 12:00 va 15:00 da ruxsat beramiz
+    if not is_manual:
+        ruxsat_etilgan_soatlar = [9, 12, 15]
+        if now.hour not in ruxsat_etilgan_soatlar:
+            print(f"🛑 Hozirgi soat ({now.hour}:00) ruxsat etilgan ro'yxatda yo'q. Dastur to'xtatildi.")
+            sys.exit(0)
+        else:
+            print(f"✅ GitHub Cron orqali ruxsat etilgan vaqtda ishga tushdi ({now.hour}:00)")
 
     genai.configure(api_key=GEMINI_KEY)
     model = genai.GenerativeModel('gemini-3.5-flash')
