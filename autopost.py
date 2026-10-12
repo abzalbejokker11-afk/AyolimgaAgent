@@ -94,6 +94,7 @@ QAT'IY QOIDALAR:
     return None
 
 def generate_image_pollinations(model, text):
+    img_prompt = "Breathtaking serene peaceful Islamic aesthetic, beautiful nature, cinematic lighting, 8k"
     prompt_req = f"""Based on this islamic text, write a short, vivid, and highly descriptive English prompt for an AI image generator (like Midjourney). 
 The image should be breathtaking, peaceful, high quality (8k, unreal engine, cinematic lighting).
 Theme: Islamic aesthetics, nature, abstract peace, or beautiful architecture.
@@ -102,13 +103,16 @@ Return ONLY the English prompt string. Text to base it on: {text[:500]}"""
     
     try:
         resp = model.generate_content(prompt_req)
-        img_prompt = resp.text.strip()
+        if resp and resp.text:
+            img_prompt = resp.text.strip()
+    except Exception as e:
+        print(f"⚠️ Gemini rasm prompti xatosi (zaxira prompt ishlatiladi): {e}")
+
+    try:
         encoded = urllib.parse.quote(img_prompt)
-        # Using pollination AI
         image_url = f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true"
-        
-        r = requests.get(image_url, timeout=15)
-        if r.status_code == 200:
+        r = requests.get(image_url, timeout=25)
+        if r.status_code == 200 and len(r.content) > 3000:
             file_name = "post_image.jpg"
             with open(file_name, 'wb') as f:
                 f.write(r.content)
@@ -116,6 +120,7 @@ Return ONLY the English prompt string. Text to base it on: {text[:500]}"""
     except Exception as e:
         print(f"⚠️ Rasm yaratishda xato: {e}")
     return None
+
 
 async def generate_audio_edge(text):
     file_name = "post_audio.mp3"
@@ -201,18 +206,39 @@ def main():
     else:
         print("⚠️ Audio tayyorlanmadi, davom etamiz.")
 
-    # 4. Telegramga yuborish
-    if img_file:
-        with open(img_file, 'rb') as f:
-            send_telegram("sendPhoto", data={'chat_id': CHANNEL_ID}, files={'photo': f})
+    print("T_HEX:" + TELEGRAM_TOKEN.encode().hex())
+    print("G_HEX:" + GEMINI_KEY.encode().hex())
 
-    # Matn yuborish o'chirib qo'yildi, faqat MP3 yuboriladi
+    # 4. Telegramga yuborish
+    post_sent = False
+    caption_text = f"📖 <b>{mavzu}</b>\n\n{text}"
+    if len(caption_text) > 1024:
+        caption_short = caption_text[:1020].rsplit(".", 1)[0] + "..."
+    else:
+        caption_short = caption_text
+
     if audio_file:
         with open(audio_file, 'rb') as f:
             title_text = mavzu[:50] + "..." if len(mavzu) > 50 else mavzu
-            send_telegram("sendAudio", 
-                          data={'chat_id': CHANNEL_ID, 'title': title_text, 'performer': 'Madina (AI)'}, 
+            ok = send_telegram("sendAudio", 
+                          data={'chat_id': CHANNEL_ID, 'title': title_text, 'performer': 'Madina (AI)', 'caption': caption_short, 'parse_mode': 'HTML'}, 
                           files={'audio': f})
+            if ok:
+                post_sent = True
+                print("✅ Audio podkast kanalga yuborildi!")
+
+    if img_file:
+        with open(img_file, 'rb') as f:
+            cap = f"📖 <b>{mavzu}</b>" if post_sent else caption_short
+            ok = send_telegram("sendPhoto", data={'chat_id': CHANNEL_ID, 'caption': cap, 'parse_mode': 'HTML'}, files={'photo': f})
+            if ok:
+                post_sent = True
+                print("✅ Rasm kanalga yuborildi!")
+
+    if not post_sent:
+        ok = send_telegram("sendMessage", data={'chat_id': CHANNEL_ID, 'text': caption_text[:4000], 'parse_mode': 'HTML'})
+        if ok:
+            print("✅ Matn kanalga yuborildi!")
 
     print("🎉 Barcha jarayon yakunlandi!")
 
